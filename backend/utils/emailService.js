@@ -31,6 +31,7 @@ const sendVerificationEmail = async (email, verificationCode) => {
         if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
             console.log('⚠️ Email configuration not found. Using console output for testing.');
             console.log('📧 Verification Code for', email, ':', verificationCode);
+            console.log('🔗 To enable real emails, set EMAIL_USER and EMAIL_PASS environment variables');
             return { success: true, messageId: 'console-test', testMode: true };
         }
 
