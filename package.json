@@ -1,0 +1,23 @@
+{
+  "name": "talk",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "nodemon backend/server.js",
+    "build": "npm install --legacy-peer-deps&& npm install build --prefix frontend&& npm run build --prefix frontend"
+  },
+  "author": "Piyush Varshney",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@chakra-ui/react": "^3.27.0",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "cors": "^2.8.5",
+    "dot": "^1.1.3",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "framer-motion": "^12.23.22",
+    "mongoose": "^8.18.2"
+  }
+}
