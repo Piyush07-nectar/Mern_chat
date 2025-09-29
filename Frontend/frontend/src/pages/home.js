@@ -22,7 +22,7 @@ import { useTheme } from '../context/themeContext';
 import EmailVerification from '../components/EmailVerification';
 import ThemeToggle from '../components/ThemeToggle';
 // API Configuration
-const API_BASE_URL = 'http://localhost:5000'
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001'
 
 function Home() {
   const navigate = useNavigate();

@@ -146,7 +146,7 @@ io.on('connection', (socket) => {
     });
 });
 
-const PORT = 5000; // Force port 5000 for frontend connection
+const PORT = process.env.PORT || 3001; // Use port 3001 to avoid ad blocker issues
 httpServer.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
     console.log('Socket.io server initialized');
