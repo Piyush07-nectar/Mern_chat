@@ -26,8 +26,9 @@ app.use(cors({
     origin: [
         "http://localhost:3000", 
         "http://localhost:3001",
-        "https://mern-chat-frontend.onrender.com", // Add your frontend production URL here
-        "https://mern-chat-frontend-4vo1.onrender.com" // Alternative frontend URL
+        "https://mern-chat-frontend-395i.onrender.com", // Your actual frontend URL
+        "https://mern-chat-frontend.onrender.com",
+        "https://mern-chat-frontend-4vo1.onrender.com"
     ],
     credentials: true
 }));
@@ -66,6 +67,7 @@ const io = new Server(httpServer, {
         origin: [
             "http://localhost:3000", 
             "http://localhost:3001",
+            "https://mern-chat-frontend-395i.onrender.com", // Your actual frontend URL
             "https://mern-chat-frontend.onrender.com",
             "https://mern-chat-frontend-4vo1.onrender.com"
         ],
