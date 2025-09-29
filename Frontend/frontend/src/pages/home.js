@@ -23,6 +23,8 @@ import EmailVerification from '../components/EmailVerification';
 import ThemeToggle from '../components/ThemeToggle';
 // API Configuration
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001'
+console.log('🔍 Frontend API URL:', API_BASE_URL)
+console.log('🔍 Environment variable:', process.env.REACT_APP_API_URL)
 
 function Home() {
   const navigate = useNavigate();
