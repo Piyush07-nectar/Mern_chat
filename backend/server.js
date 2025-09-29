@@ -26,7 +26,7 @@ app.use(cors({
     origin: ["http://localhost:3000", "http://localhost:3001"], // Frontend URLs
     credentials: true
 }));
-const __dirname = path.resolve();
+
 if(process.env.NODE_ENV === 'production'){
     app.use(express.static(path.join(__dirname, '/Frontend/frontend/build')));
     app.get('*', (req, res) => res.sendFile(path.resolve(__dirname, 'Frontend', 'frontend', 'build', 'index.html')));
