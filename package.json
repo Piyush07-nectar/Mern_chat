@@ -1,9 +1,9 @@
 {
   "name": "talk",
   "version": "1.0.0",
-  "main": "server.js",
   "scripts": {
-    "start": "nodemon backend/server.js",
+    "start": "cd backend && npm start",
+    "dev": "cd backend && npm run dev",
     "build": "npm install --legacy-peer-deps&& npm install build --prefix frontend&& npm run build --prefix frontend"
   },
   "author": "Piyush Varshney",
