@@ -280,7 +280,17 @@ const loginUser = async (req, res) => {
         }
 
         //TODO: Find user in database
-        const user = await User.findOne({ email });
+        let user;
+        try {
+            user = await User.findOne({ email });
+        } catch (dbError) {
+            console.error('Database error during login:', dbError);
+            res.status(500).json({ 
+                message: 'Database connection error. Please try again later.' 
+            });
+            return;
+        }
+        
         if (!user) {
             res.status(401).json({ message: 'Invalid email or password' });
             return;
