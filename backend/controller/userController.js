@@ -27,51 +27,31 @@ const registerUser = async (req, res) => {
             return;
         }
 
-        // Generate 6-digit verification code
-        const verificationCode = crypto.randomInt(100000, 999999).toString();
-        
-        // Check if there's already a pending verification for this email
-        const existingVerification = await EmailVerification.findOne({ email });
-        
-        if (existingVerification) {
-            // Update existing verification with new code
-            existingVerification.verificationCode = verificationCode;
-            existingVerification.isVerified = false;
-            existingVerification.attempts = 0;
-            existingVerification.expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
-            await existingVerification.save();
-        } else {
-            // Create new verification record
-            await EmailVerification.create({
-                email,
-                verificationCode,
-                expiresAt: new Date(Date.now() + 15 * 60 * 1000) // 15 minutes
-            });
-        }
-
-        // Send verification email
-        let emailResult;
-        try {
-            emailResult = await sendVerificationEmail(email, verificationCode);
-        } catch (emailError) {
-            console.error('❌ Email service error:', emailError);
-            // Continue without email verification for now
-            emailResult = { success: true, message: 'Email verification skipped due to service issues' };
-        }
-        
-        if (!emailResult.success) {
-            console.error('❌ Failed to send verification email:', emailResult.error);
-            // Continue registration even if email fails
-            console.log('⚠️ Continuing registration without email verification');
-        }
-
-        console.log('✅ Verification email sent successfully to:', email);
-        
-        res.status(200).json({
-            message: 'Verification code sent to your email. Please check your inbox and verify your email to complete registration.',
-            email: email,
-            expiresIn: '15 minutes'
+        // Create user directly without email verification
+        const user = await User.create({
+            name,
+            email,
+            password: hashedPassword,
+            pic: pic || 'https://via.placeholder.com/150'
         });
+
+        if (user) {
+            console.log('✅ User created successfully:', user.email);
+            
+            // Generate JWT token for immediate login
+            const token = generateToken(user._id);
+            
+            res.status(201).json({
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                pic: user.pic,
+                token: token,
+                message: 'Registration successful! You are now logged in.'
+            });
+        } else {
+            res.status(400).json({ message: 'Failed to create user' });
+        }
         
     } catch (error) {
         console.error('❌ Registration error:', error);
@@ -289,23 +269,8 @@ const loginUser = async (req, res) => {
             return;
         }
 
-        //TODO: Find user in database
-        let user;
-        try {
-            user = await User.findOne({ email });
-        } catch (dbError) {
-            console.error('Database error during login:', dbError);
-            // Temporary: Allow login with any email/password for testing
-            console.log('⚠️ Database not connected - using temporary login for testing');
-            res.status(200).json({
-                _id: 'temp-user-id',
-                name: 'Test User',
-                email: email,
-                pic: 'https://via.placeholder.com/150',
-                token: 'temp-token-for-testing'
-            });
-            return;
-        }
+        // Find user in database
+        const user = await User.findOne({ email });
         
         if (!user) {
             res.status(401).json({ message: 'Invalid email or password' });
