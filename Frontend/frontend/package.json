@@ -17,9 +17,10 @@
   "scripts": {
     "start": "react-scripts --openssl-legacy-provider start",
     "build": "react-scripts --openssl-legacy-provider build",
+    "build:production": "REACT_APP_API_URL=https://mern-chat-backend-buh1.onrender.com react-scripts --openssl-legacy-provider build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "deploy": "npm run build"
+    "deploy": "npm run build:production"
   },
   "eslintConfig": {
     "extends": [

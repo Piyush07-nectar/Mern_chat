@@ -10,7 +10,7 @@ import {
 import { Envelope, ArrowLeft, Clock } from 'react-bootstrap-icons';
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5000';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
 const EmailVerification = ({ 
   show, 
