@@ -23,13 +23,28 @@ if (result.error) {
 
 // Debug: Check if environment variables are loaded 
 app.use(cors({
-    origin: ["http://localhost:3000", "http://localhost:3001"], // Frontend URLs
+    origin: [
+        "http://localhost:3000", 
+        "http://localhost:3001",
+        "https://mern-chat-frontend.onrender.com", // Add your frontend production URL here
+        "https://mern-chat-frontend-4vo1.onrender.com" // Alternative frontend URL
+    ],
     credentials: true
 }));
 
 if(process.env.NODE_ENV === 'production'){
-    app.use(express.static(path.join(__dirname, '/Frontend/frontend/build')));
-    app.get('*', (req, res) => res.sendFile(path.resolve(__dirname, 'Frontend', 'frontend', 'build', 'index.html')));
+    // Since backend is deployed separately, serve API info instead of frontend
+    app.get('/', (req, res) => {
+        res.json({
+            message: 'ChatApp Backend API is running',
+            status: 'success',
+            endpoints: {
+                users: '/api/user',
+                chats: '/api/chat', 
+                messages: '/api/message'
+            }
+        });
+    });
 }
 else{
     app.get('/', (req, res) => {
@@ -38,9 +53,6 @@ else{
 }
 app.use(express.json());
 connectDB();
-app.get('/', (req, res) => {
-    res.send('Api is Running through server 5000');
-});
 app.use('/api/user', userRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/message', messageRoutes);
@@ -51,7 +63,12 @@ const httpServer = createServer(app);
 // Initialize Socket.io
 const io = new Server(httpServer, {
     cors: {
-        origin: ["http://localhost:3000", "http://localhost:3001"],
+        origin: [
+            "http://localhost:3000", 
+            "http://localhost:3001",
+            "https://mern-chat-frontend.onrender.com",
+            "https://mern-chat-frontend-4vo1.onrender.com"
+        ],
         credentials: true
     }
 });
