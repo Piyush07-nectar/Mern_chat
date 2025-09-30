@@ -227,3 +227,48 @@ module.exports = {
     sendVerificationEmail,
     sendWelcomeEmail
 };
+
+// Debug-only helper to check email configuration and SMTP connectivity
+const maskString = (str) => {
+    if (!str) return '';
+    if (str.length <= 3) return '***';
+    return str.substring(0, 3) + '***';
+};
+
+async function checkEmailConfig() {
+    try {
+        const { user, pass } = getEmailCredentials();
+        const configured = Boolean(user && pass);
+        const summary = {
+            configured,
+            service: process.env.EMAIL_SERVICE || 'smtp',
+            userMasked: maskString(user),
+            passLength: pass ? pass.length : 0,
+            nodeEnv: process.env.NODE_ENV || 'development',
+            debug: process.env.EMAIL_DEBUG === '1'
+        };
+
+        if (!configured) {
+            return { ...summary, smtpVerified: false, error: 'Missing EMAIL_USER or EMAIL_PASS' };
+        }
+
+        const originalUser = process.env.EMAIL_USER;
+        const originalPass = process.env.EMAIL_PASS;
+        process.env.EMAIL_USER = user;
+        process.env.EMAIL_PASS = pass;
+        const transporter = createTransporter();
+        try {
+            await transporter.verify();
+            return { ...summary, smtpVerified: true };
+        } catch (e) {
+            return { ...summary, smtpVerified: false, error: e.message };
+        } finally {
+            process.env.EMAIL_USER = originalUser;
+            process.env.EMAIL_PASS = originalPass;
+        }
+    } catch (error) {
+        return { configured: false, smtpVerified: false, error: error.message };
+    }
+}
+
+module.exports.checkEmailConfig = checkEmailConfig;
