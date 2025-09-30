@@ -353,15 +353,15 @@ function Chat() {
     }
   };
 
-  // Handle typing indicators with debouncing
+  // Handle typing indicators with improved debouncing
   const handleTyping = useCallback((e) => {
     if (!selectedChat?._id) return;
     
     const value = e.target.value;
     setNewMessage(value);
     
-    // Start typing indicator
-    if (!isTyping) {
+    // Only start typing indicator if there's actual content
+    if (value.trim() && !isTyping) {
       setIsTyping(true);
       startTyping(selectedChat._id);
     }
@@ -371,11 +371,11 @@ function Chat() {
       clearTimeout(typingTimeout);
     }
     
-    // Set new timeout to stop typing
+    // Set new timeout to stop typing (reduced to 2 seconds for better responsiveness)
     const timeout = setTimeout(() => {
       setIsTyping(false);
       stopTyping(selectedChat._id);
-    }, 3000);
+    }, 2000);
     
     setTypingTimeout(timeout);
   }, [selectedChat?._id, isTyping, startTyping, stopTyping, typingTimeout]);
@@ -912,7 +912,7 @@ function Chat() {
                     </div>
                   ))}
                   
-                  {/* Typing Indicators */}
+                  {/* Enhanced Typing Indicators */}
                   {selectedChat && (() => {
                     const typingUsers = getTypingUsers(selectedChat._id);
                     const typingUserNames = Object.values(typingUsers);
@@ -921,15 +921,21 @@ function Chat() {
                       return (
                         <div className="d-flex justify-content-start mb-3">
                           <div 
-                            className="border rounded p-2"
+                            className="border rounded-pill px-3 py-2"
                             style={{
                               backgroundColor: 'var(--typing-bg)',
-                              borderColor: 'var(--border-color)'
+                              borderColor: 'var(--border-color)',
+                              maxWidth: '200px',
+                              boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                             }}
                           >
                             <div className="d-flex align-items-center">
-                              <Spinner animation="grow" size="sm" className="me-2" />
-                              <small className="text-muted">
+                              <div className="typing-dots me-2">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                              </div>
+                              <small className="text-muted fw-medium">
                                 {typingUserNames.length === 1 
                                   ? `${typingUserNames[0]} is typing...`
                                   : `${typingUserNames.join(', ')} are typing...`
@@ -948,6 +954,20 @@ function Chat() {
 
             {/* Message Input */}
             <div style={{ padding: '1rem', borderTop: '1px solid var(--border-color)' }}>
+              {/* Typing indicator for current user */}
+              {isTyping && (
+                <div className="mb-2">
+                  <small className="text-muted d-flex align-items-center">
+                    <div className="typing-dots me-2">
+                      <span></span>
+                      <span></span>
+                      <span></span>
+                    </div>
+                    You are typing...
+                  </small>
+                </div>
+              )}
+              
               <InputGroup>
                 <Form.Control
                   as="textarea"
@@ -956,11 +976,19 @@ function Chat() {
                   value={newMessage}
                   onChange={handleTyping}
                   onKeyPress={handleKeyPress}
+                  style={{
+                    borderColor: isTyping ? 'var(--message-bg-sent)' : undefined,
+                    boxShadow: isTyping ? '0 0 0 0.2rem rgba(0, 123, 255, 0.25)' : undefined
+                  }}
                 />
                 <Button
                   variant="primary"
                   onClick={sendMessage}
                   disabled={!newMessage.trim() || loading}
+                  style={{
+                    backgroundColor: isTyping ? 'var(--message-bg-sent)' : undefined,
+                    borderColor: isTyping ? 'var(--message-bg-sent)' : undefined
+                  }}
                 >
                   <Send size={16} />
                 </Button>
