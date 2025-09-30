@@ -51,11 +51,23 @@ const registerUser = async (req, res) => {
         });
 
         console.log('✅ Verification code generated and email scheduled:', email);
-        res.status(200).json({
+
+        // In development or when email is not configured, include the code in response for convenience
+        const emailConfigured = Boolean(process.env.EMAIL_USER && process.env.EMAIL_PASS);
+        const isProduction = process.env.NODE_ENV === 'production';
+
+        const responsePayload = {
             message: 'Verification code sent to your email. Please verify to complete registration.',
             email,
             expiresIn: '15 minutes'
-        });
+        };
+
+        if (!emailConfigured || !isProduction) {
+            responsePayload.testMode = true;
+            responsePayload.verificationCode = verificationCode;
+        }
+
+        res.status(200).json(responsePayload);
     } catch (error) {
         console.error('❌ Registration error:', error);
         res.status(500).json({
