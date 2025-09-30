@@ -39,6 +39,15 @@ const sendVerificationEmail = async (email, verificationCode) => {
     try {
         // Check if email configuration is available
         const { user, pass } = getEmailCredentials();
+        console.log('🔍 Email config check:', {
+            hasUser: !!user,
+            hasPass: !!pass,
+            userLength: user?.length || 0,
+            passLength: pass?.length || 0,
+            userStart: user?.substring(0, 3) + '...',
+            passStart: pass?.substring(0, 3) + '...'
+        });
+        
         if (!user || !pass) {
             console.log('⚠️ Email configuration not found. Using console output for testing.');
             console.log('📧 Verification Code for', email, ':', verificationCode);
@@ -51,7 +60,20 @@ const sendVerificationEmail = async (email, verificationCode) => {
         const originalPass = process.env.EMAIL_PASS;
         process.env.EMAIL_USER = user;
         process.env.EMAIL_PASS = pass;
+        
+        console.log('📧 Attempting to send verification email to:', email);
         const transporter = createTransporter();
+        
+        // Test connection first
+        try {
+            await transporter.verify();
+            console.log('✅ SMTP connection verified successfully');
+        } catch (verifyError) {
+            console.error('❌ SMTP connection failed:', verifyError.message);
+            console.error('❌ Full error:', verifyError);
+            return { success: false, error: `SMTP connection failed: ${verifyError.message}` };
+        }
+        
         // Restore originals to avoid side effects
         process.env.EMAIL_USER = originalUser;
         process.env.EMAIL_PASS = originalPass;
@@ -101,6 +123,12 @@ const sendVerificationEmail = async (email, verificationCode) => {
 
         const result = await transporter.sendMail(mailOptions);
         console.log('✅ Verification email sent successfully:', result.messageId);
+        console.log('📧 Email details:', {
+            to: email,
+            from: process.env.EMAIL_USER,
+            messageId: result.messageId,
+            response: result.response
+        });
         return { success: true, messageId: result.messageId };
     } catch (error) {
         console.error('❌ Error sending verification email:', error);
