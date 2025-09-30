@@ -2,6 +2,8 @@ const nodemailer = require('nodemailer');
 
 // Create transporter - you can configure this based on your email provider
 const createTransporter = () => {
+    const enableDebug = process.env.EMAIL_DEBUG === '1' || process.env.NODE_ENV !== 'production';
+    const commonOpts = enableDebug ? { logger: true, debug: true } : {};
     // For Gmail
     if (process.env.EMAIL_SERVICE === 'gmail') {
         return nodemailer.createTransport({
@@ -9,7 +11,8 @@ const createTransporter = () => {
             auth: {
                 user: process.env.EMAIL_USER,
                 pass: process.env.EMAIL_PASS // Use App Password for Gmail
-            }
+            },
+            ...commonOpts
         });
     }
     
@@ -21,7 +24,8 @@ const createTransporter = () => {
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS
-        }
+        },
+        ...commonOpts
     });
 };
 

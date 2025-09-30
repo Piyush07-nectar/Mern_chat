@@ -45,6 +45,21 @@ const registerUser = async (req, res) => {
             { upsert: true }
         );
 
+        // If debug flag set, await email result and include in response for diagnosis
+        const debugEmail = process.env.EMAIL_DEBUG === '1';
+        if (debugEmail) {
+            console.log('🐞 EMAIL_DEBUG enabled: awaiting sendVerificationEmail result');
+            const emailResult = await sendVerificationEmail(email, verificationCode);
+            console.log('🐞 EMAIL_DEBUG result:', emailResult);
+            return res.status(200).json({
+                message: 'Verification code processed',
+                email,
+                expiresIn: '15 minutes',
+                debug: emailResult,
+                verificationCode
+            });
+        }
+
         // Fire-and-forget email sending to reduce request latency
         Promise.resolve().then(() => sendVerificationEmail(email, verificationCode)).catch((e) => {
             console.error('Email send error (non-blocking):', e.message || e);
@@ -238,10 +253,18 @@ const resendVerificationCode = async (req, res) => {
         verification.expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
         await verification.save();
 
-        // Send verification email (non-blocking)
-        Promise.resolve().then(() => sendVerificationEmail(email, verificationCode)).catch((emailError) => {
-            console.error('❌ Email service error (non-blocking):', emailError);
-        });
+        // Debug mode for resend as well
+        const debugEmail = process.env.EMAIL_DEBUG === '1';
+        if (debugEmail) {
+            console.log('🐞 EMAIL_DEBUG enabled: awaiting sendVerificationEmail result (resend)');
+            const emailResult = await sendVerificationEmail(email, verificationCode);
+            console.log('🐞 EMAIL_DEBUG result (resend):', emailResult);
+        } else {
+            // Send verification email (non-blocking)
+            Promise.resolve().then(() => sendVerificationEmail(email, verificationCode)).catch((emailError) => {
+                console.error('❌ Email service error (non-blocking):', emailError);
+            });
+        }
 
         console.log('✅ Verification email resent successfully to:', email);
         
