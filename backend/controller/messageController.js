@@ -31,7 +31,7 @@ const sendMessage = async (req, res) => {
             });
         }
 
-        // Security Check 3: Validate message content
+        // Security Check 3: Validate message content (only for text messages)
         if (content.trim().length === 0) {
             return res.status(400).json({ message: "Message content cannot be empty" });
         }

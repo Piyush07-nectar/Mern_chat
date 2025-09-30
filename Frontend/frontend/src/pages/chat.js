@@ -14,7 +14,9 @@ import {
   Person,
   PersonFill,
   Send,
-  PersonPlus
+  PersonPlus,
+  Image,
+  X
 } from 'react-bootstrap-icons';
 import axios from 'axios';
 import { ChatState } from '../context/chatContext';
@@ -89,6 +91,11 @@ function Chat() {
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
+  // Image upload state
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef(null);
 
   const getConfig = useCallback(() => {
     return {
@@ -327,6 +334,79 @@ function Chat() {
       setLoading(false);
     }
   }, [newMessage, selectedChat?._id, stopTyping, getConfig, typingTimeout]);
+
+  // Image upload functions
+  const handleImageSelect = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setError('Please select a valid image file');
+        return;
+      }
+      
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Image size must be less than 5MB');
+        return;
+      }
+      
+      setSelectedImage(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const uploadImage = async () => {
+    if (!selectedImage || !selectedChat?._id || uploadingImage) return;
+
+    try {
+      setUploadingImage(true);
+      
+      const formData = new FormData();
+      formData.append('image', selectedImage);
+      formData.append('chatId', selectedChat._id);
+      
+      const response = await axios.post(
+        `${API_BASE_URL}/api/image/upload`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${user?.token}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+      
+      console.log('🖼️ Image uploaded - Response:', response.data);
+      
+      // Clear image selection
+      setSelectedImage(null);
+      setImagePreview(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      setError('Failed to upload image');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const cancelImageUpload = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const createGroupChat = async (e) => {
     e.preventDefault(); // Prevent form submission and page refresh
@@ -981,7 +1061,26 @@ function Chat() {
                         <div className="fw-bold small">
                           {getSenderName(message)}
                         </div>
-                        <div>{message?.content || message?.message || 'Message content unavailable'}</div>
+                        {message?.messageType === 'image' ? (
+                          <div className="text-center">
+                            <img 
+                              src={message.imageUrl} 
+                              alt="Shared image" 
+                              style={{ 
+                                maxWidth: '100%', 
+                                maxHeight: '300px', 
+                                borderRadius: '8px',
+                                cursor: 'pointer'
+                              }}
+                              onClick={() => window.open(message.imageUrl, '_blank')}
+                            />
+                            {message?.content && (
+                              <div className="mt-2">{message.content}</div>
+                            )}
+                          </div>
+                        ) : (
+                          <div>{message?.content || message?.message || 'Message content unavailable'}</div>
+                        )}
                         <div className="small opacity-75">
                           {message?.createdAt ? formatTime(message.createdAt) : 'Unknown time'}
                         </div>
@@ -1048,7 +1147,64 @@ function Chat() {
                 </div>
               )}
               
+              {/* Image Preview */}
+              {imagePreview && (
+                <div className="mb-3 p-3 border rounded" style={{ backgroundColor: 'var(--message-bg-received)' }}>
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <small className="text-muted">Image Preview</small>
+                    <Button 
+                      variant="outline-danger" 
+                      size="sm" 
+                      onClick={cancelImageUpload}
+                    >
+                      <X size={14} />
+                    </Button>
+                  </div>
+                  <img 
+                    src={imagePreview} 
+                    alt="Preview" 
+                    style={{ 
+                      maxWidth: '200px', 
+                      maxHeight: '150px', 
+                      borderRadius: '8px' 
+                    }} 
+                  />
+                  <div className="mt-2">
+                    <Button 
+                      variant="success" 
+                      size="sm" 
+                      onClick={uploadImage}
+                      disabled={uploadingImage}
+                    >
+                      {uploadingImage ? (
+                        <>
+                          <Spinner size="sm" className="me-1" />
+                          Uploading...
+                        </>
+                      ) : (
+                        'Send Image'
+                      )}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
               <InputGroup>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                  ref={fileInputRef}
+                  style={{ display: 'none' }}
+                />
+                <Button
+                  variant="outline-secondary"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingImage}
+                  title="Upload Image"
+                >
+                  <Image size={16} />
+                </Button>
                 <Form.Control
                   as="textarea"
                   rows={2}

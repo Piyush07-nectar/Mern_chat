@@ -3,6 +3,19 @@ const messageModel = mongoose.Schema({
     sender: {type: mongoose.Schema.Types.ObjectId, ref: 'User'},
     content: {type: String, trim: true},
     chat: {type: mongoose.Schema.Types.ObjectId, ref: 'Chat'},
+    messageType: {
+        type: String,
+        enum: ['text', 'image'],
+        default: 'text'
+    },
+    imageUrl: {
+        type: String,
+        default: null
+    },
+    imagePublicId: {
+        type: String,
+        default: null
+    }
 }, {
     timestamps: true
 })

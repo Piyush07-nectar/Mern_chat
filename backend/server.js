@@ -7,7 +7,9 @@ const connectDB = require('./connection/db');
 const userRoutes = require('./Routes/userRoutes');
 const chatRoutes = require('./Routes/chatRoutes');
 const messageRoutes = require('./Routes/messageRoutes');
+const imageRoutes = require('./Routes/imageRoutes');
 const { setSocketIOInstance } = require('./controller/messageController');
+const { setSocketIOInstance: setImageSocketIOInstance } = require('./controller/imageController');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 const jwt = require('jsonwebtoken');
@@ -49,9 +51,18 @@ else{
 }
 app.use(express.json());
 connectDB();
+
+// Create uploads directory if it doesn't exist
+const fs = require('fs');
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
 app.use('/api/user', userRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/message', messageRoutes);
+app.use('/api/image', imageRoutes);
 
 // Create HTTP server
 const httpServer = createServer(app);
@@ -72,6 +83,7 @@ const io = new Server(httpServer, {
 
 // Pass socket.io instance to message controller
 setSocketIOInstance(io);
+setImageSocketIOInstance(io);
 
 // Socket.io authentication middleware
 io.use(async (socket, next) => {
