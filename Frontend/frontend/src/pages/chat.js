@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Button,
   Form,
@@ -85,6 +85,10 @@ function Chat() {
   // Typing indicator state
   const [isTyping, setIsTyping] = useState(false);
   const [typingTimeout, setTypingTimeout] = useState(null);
+  // Auto-scroll refs
+  const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
+  const [showScrollButton, setShowScrollButton] = useState(false);
 
   const getConfig = useCallback(() => {
     return {
@@ -94,6 +98,49 @@ function Chat() {
       },
     };
   }, [user]);
+
+  // Auto-scroll to bottom function
+  const scrollToBottom = useCallback(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'end'
+      });
+    }
+  }, []);
+
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    if (messages.length > 0) {
+      // Small delay to ensure DOM is updated
+      setTimeout(scrollToBottom, 100);
+    }
+  }, [messages, scrollToBottom]);
+
+  // Auto-scroll when chat is selected
+  useEffect(() => {
+    if (selectedChat && messages.length > 0) {
+      setTimeout(scrollToBottom, 200);
+    }
+  }, [selectedChat, messages.length, scrollToBottom]);
+
+  // Handle scroll detection for scroll-to-bottom button
+  const handleScroll = useCallback(() => {
+    if (messagesContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+      setShowScrollButton(!isNearBottom);
+    }
+  }, []);
+
+  // Add scroll listener
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (container) {
+      container.addEventListener('scroll', handleScroll);
+      return () => container.removeEventListener('scroll', handleScroll);
+    }
+  }, [handleScroll]);
 
   const fetchChats = useCallback(async () => {
     try {
@@ -503,6 +550,9 @@ function Chat() {
             console.log('✅ Adding new message to chat');
             return [...prev, data.message];
           });
+          
+          // Auto-scroll to bottom when new message is received
+          setTimeout(scrollToBottom, 100);
         }
         
         // Update chats list to show latest message
@@ -863,13 +913,40 @@ function Chat() {
 
             {/* Messages Area */}
             <div
+              ref={messagesContainerRef}
               style={{
                 flex: 1,
                 overflowY: 'auto',
                 padding: '1rem',
-                background: 'var(--bg-secondary)'
+                background: 'var(--bg-secondary)',
+                scrollBehavior: 'smooth',
+                position: 'relative'
               }}
             >
+              {/* Scroll to bottom button */}
+              {showScrollButton && (
+                <Button
+                  variant="primary"
+                  size="sm"
+                  className="position-absolute"
+                  style={{
+                    bottom: '20px',
+                    right: '20px',
+                    zIndex: 10,
+                    borderRadius: '50%',
+                    width: '40px',
+                    height: '40px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+                  }}
+                  onClick={scrollToBottom}
+                  title="Scroll to bottom"
+                >
+                  ↓
+                </Button>
+              )}
               {loading ? (
                 <div className="text-center">
                   <Spinner animation="border" />
@@ -948,6 +1025,9 @@ function Chat() {
                     }
                     return null;
                   })()}
+                  
+                  {/* Auto-scroll anchor */}
+                  <div ref={messagesEndRef} />
                 </div>
               )}
             </div>
