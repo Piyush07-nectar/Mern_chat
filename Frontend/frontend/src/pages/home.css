@@ -163,24 +163,182 @@
   z-index: 1;
 }
 
-/* Responsive adjustments */
+/* Mobile-First Responsive Design */
 @media (max-width: 768px) {
   .talkative-title {
     font-size: 2.5rem;
+    margin-bottom: 1rem;
   }
   
   .talkative-subtitle {
     font-size: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .form-card {
+    margin: 0 0.5rem;
+    padding: 1.5rem !important;
+  }
+
+  .btn-group {
+    width: 100%;
+    margin-bottom: 1.5rem;
+  }
+
+  .btn-group .btn {
+    flex: 1;
+    font-size: 0.9rem;
+    padding: 0.75rem 1rem;
+  }
+
+  .form-control {
+    font-size: 1rem;
+    padding: 0.75rem 1rem;
+  }
+
+  .form-label {
+    font-size: 0.9rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .btn-primary {
+    font-size: 1rem;
+    padding: 0.75rem 2rem;
+    width: 100%;
+  }
+
+  .file-upload-section {
+    padding: 0.75rem;
+  }
+
+  .profile-preview {
+    width: 60px !important;
+    height: 60px !important;
   }
 }
 
 @media (max-width: 576px) {
   .talkative-title {
-    font-size: 2rem;
+    font-size: 1.8rem;
+    line-height: 1.2;
   }
   
+  .talkative-subtitle {
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+  }
+
   .container {
-    padding-left: 1rem;
-    padding-right: 1rem;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  .form-card {
+    margin: 0 0.25rem;
+    padding: 1rem !important;
+    border-radius: 0.75rem;
+  }
+
+  .btn-group .btn {
+    font-size: 0.85rem;
+    padding: 0.6rem 0.5rem;
+  }
+
+  .form-control {
+    font-size: 0.95rem;
+    padding: 0.6rem 0.8rem;
+  }
+
+  .form-label {
+    font-size: 0.85rem;
+  }
+
+  .btn-primary {
+    font-size: 0.95rem;
+    padding: 0.7rem 1.5rem;
+  }
+
+  .file-upload-section {
+    padding: 0.5rem;
+    font-size: 0.85rem;
+  }
+
+  .profile-preview {
+    width: 50px !important;
+    height: 50px !important;
+  }
+
+  .footer-text {
+    font-size: 0.75rem;
+    line-height: 1.4;
+  }
+
+  /* Improve spacing on very small screens */
+  .d-grid.gap-3 {
+    gap: 1rem !important;
+  }
+
+  .mb-3 {
+    margin-bottom: 1rem !important;
+  }
+
+  .mb-4 {
+    margin-bottom: 1.5rem !important;
+  }
+
+  .mb-5 {
+    margin-bottom: 2rem !important;
+  }
+}
+
+/* Extra small devices (phones in portrait) */
+@media (max-width: 375px) {
+  .talkative-title {
+    font-size: 1.6rem;
+  }
+  
+  .talkative-subtitle {
+    font-size: 0.85rem;
+  }
+
+  .form-card {
+    padding: 0.75rem !important;
+  }
+
+  .btn-group .btn {
+    font-size: 0.8rem;
+    padding: 0.5rem 0.3rem;
+  }
+
+  .form-control {
+    font-size: 0.9rem;
+    padding: 0.5rem 0.6rem;
+  }
+
+  .btn-primary {
+    font-size: 0.9rem;
+    padding: 0.6rem 1rem;
+  }
+}
+
+/* Landscape phone orientation */
+@media (max-width: 768px) and (orientation: landscape) {
+  .min-vh-100 {
+    min-height: auto;
+    padding: 1rem 0;
+  }
+
+  .talkative-title {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .talkative-subtitle {
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+  }
+
+  .form-card {
+    margin: 0.5rem 0;
   }
 }

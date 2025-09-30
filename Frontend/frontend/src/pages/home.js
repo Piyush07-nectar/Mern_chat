@@ -168,12 +168,12 @@ function Home() {
         <ThemeToggle />
       </div>
 
-      <Container className="py-5">
+      <Container className="py-3 py-md-5">
         <Row className="justify-content-center">
-          <Col md={6} lg={5} xl={4}>
-            <div className="text-center mb-5">
+          <Col xs={12} sm={10} md={8} lg={6} xl={5}>
+            <div className="text-center mb-4 mb-md-5">
               <h1 
-                className="talkative-title mb-3"
+                className="talkative-title mb-2 mb-md-3"
                 style={{ color: 'var(--text-primary)' }}
               >
                 <span className="bg-gradient-primary bg-clip-text text-transparent">
@@ -195,9 +195,9 @@ function Home() {
                 borderColor: 'var(--border-color)'
               }}
             >
-              <Card.Body className="p-4">
-                <div className="text-center mb-4">
-                  <ButtonGroup className="mb-3 toggle-buttons">
+              <Card.Body className="p-3 p-md-4">
+                <div className="text-center mb-3 mb-md-4">
+                  <ButtonGroup className="mb-3 mb-md-4 toggle-buttons">
                     <ToggleButton
                       id="login-toggle"
                       type="radio"
@@ -240,7 +240,7 @@ function Home() {
                 )}
 
                 <Form onSubmit={handleSubmit}>
-                  <div className="d-grid gap-3">
+                  <div className="d-grid gap-2 gap-md-3">
                     {/* Name field - only for signup */}
                     {!isLogin && (
                       <FormGroup>
@@ -382,7 +382,7 @@ function Home() {
                       type="submit"
                       variant="primary"
                       size="lg"
-                      className="mt-3 py-3 fw-semibold"
+                      className="mt-2 mt-md-3 py-2 py-md-3 fw-semibold"
                       disabled={loading}
                     >
                       {loading ? (
@@ -402,7 +402,7 @@ function Home() {
             </Card>
 
             {/* Footer */}
-            <div className="text-center mt-4">
+            <div className="text-center mt-3 mt-md-4">
               <small className="footer-text">
                 By continuing, you agree to our Terms of Service and Privacy Policy
               </small>
