@@ -12,52 +12,53 @@ const registerUser = async (req, res) => {
         console.log('Registration attempt:', req.body);
         const { name, email, password, pic } = req.body;
 
-        // Check if all required fields are provided
+        // Validate required fields
         if (!name || !email || !password) {
-            res.status(400).json({ 
-                message: 'Please provide all required fields: name, email, password' 
+            res.status(400).json({
+                message: 'Please provide all required fields: name, email, password'
             });
             return;
         }
 
-        // Check if user already exists
-        const userExists = await User.findOne({ email });
-        if (userExists) {
+        // Fast existence check
+        const exists = await User.exists({ email });
+        if (exists) {
             res.status(400).json({ message: 'User already exists' });
             return;
         }
 
-        // Create user directly without email verification
-        const user = await User.create({
-            name,
-            email,
-            password: hashedPassword,
-            pic: pic || 'https://via.placeholder.com/150'
+        // Generate a 6-digit verification code
+        const verificationCode = crypto.randomInt(100000, 999999).toString();
+
+        // Upsert verification record to avoid extra reads
+        await EmailVerification.updateOne(
+            { email },
+            {
+                $set: {
+                    verificationCode,
+                    isVerified: false,
+                    attempts: 0,
+                    expiresAt: new Date(Date.now() + 15 * 60 * 1000)
+                },
+                $setOnInsert: { createdAt: new Date() }
+            },
+            { upsert: true }
+        );
+
+        // Fire-and-forget email sending to reduce request latency
+        Promise.resolve().then(() => sendVerificationEmail(email, verificationCode)).catch((e) => {
+            console.error('Email send error (non-blocking):', e.message || e);
         });
 
-        if (user) {
-            console.log('✅ User created successfully:', user.email);
-            
-            // Generate JWT token for immediate login
-            const token = generateToken(user._id);
-            
-            res.status(201).json({
-                _id: user._id,
-                name: user.name,
-                email: user.email,
-                pic: user.pic,
-                token: token,
-                message: 'Registration successful! You are now logged in.'
-            });
-        } else {
-            res.status(400).json({ message: 'Failed to create user' });
-        }
-        
+        console.log('✅ Verification code generated and email scheduled:', email);
+        res.status(200).json({
+            message: 'Verification code sent to your email. Please verify to complete registration.',
+            email,
+            expiresIn: '15 minutes'
+        });
     } catch (error) {
         console.error('❌ Registration error:', error);
-        console.log('=== REGISTRATION DEBUG END ===');
-        
-        res.status(500).json({ 
+        res.status(500).json({
             message: 'Internal server error during registration',
             error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
         });
@@ -146,8 +147,10 @@ const verifyEmail = async (req, res) => {
         verification.isVerified = true;
         await verification.save();
 
-        // Send welcome email
-        await sendWelcomeEmail(email, name);
+        // Send welcome email (non-blocking)
+        Promise.resolve().then(() => sendWelcomeEmail(email, name)).catch((e) => {
+            console.error('Welcome email error (non-blocking):', e.message || e);
+        });
 
         console.log('✅ User created successfully after email verification:', {
             _id: user._id,
@@ -216,28 +219,17 @@ const resendVerificationCode = async (req, res) => {
 
         // Generate new verification code
         const verificationCode = crypto.randomInt(100000, 999999).toString();
-        
+
         // Update verification record
         verification.verificationCode = verificationCode;
         verification.attempts = 0;
         verification.expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
         await verification.save();
 
-        // Send verification email
-        let emailResult;
-        try {
-            emailResult = await sendVerificationEmail(email, verificationCode);
-        } catch (emailError) {
-            console.error('❌ Email service error:', emailError);
-            // Continue without email verification for now
-            emailResult = { success: true, message: 'Email verification skipped due to service issues' };
-        }
-        
-        if (!emailResult.success) {
-            console.error('❌ Failed to resend verification email:', emailResult.error);
-            // Continue even if email fails
-            console.log('⚠️ Continuing without email verification');
-        }
+        // Send verification email (non-blocking)
+        Promise.resolve().then(() => sendVerificationEmail(email, verificationCode)).catch((emailError) => {
+            console.error('❌ Email service error (non-blocking):', emailError);
+        });
 
         console.log('✅ Verification email resent successfully to:', email);
         
