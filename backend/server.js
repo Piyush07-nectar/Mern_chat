@@ -14,12 +14,7 @@ const jwt = require('jsonwebtoken');
 const User = require('./models/usermodel');
 const path = require('path');
 // Load environment variables
-const result = dotenv.config({ path: './.env' });
-if (result.error) {
-    console.log('❌ Error loading .env file:', result.error);
-} else {
-    console.log('✅ .env file loaded successfully');
-}
+dotenv.config({ path: './.env' });
 
 // Debug: Check if environment variables are loaded 
 app.use(cors({
@@ -104,28 +99,23 @@ io.use(async (socket, next) => {
 
 // Socket.io connection handling
 io.on('connection', (socket) => {
-    console.log(`User connected: ${socket.user.name} (${socket.userId})`);
-    
     // Join user to their own room for personal notifications
     socket.join(socket.userId);
 
     // Handle joining chat rooms
     socket.on('join_chat', (chatId) => {
         socket.join(chatId);
-        console.log(`User ${socket.user.name} joined chat ${chatId}`);
     });
 
     // Handle leaving chat rooms
     socket.on('leave_chat', (chatId) => {
         socket.leave(chatId);
-        console.log(`User ${socket.user.name} left chat ${chatId}`);
     });
 
     // Handle new messages
     socket.on('new_message', (data) => {
         // Broadcast message to all users in the chat
         socket.to(data.chatId).emit('message_received', data);
-        console.log(`Message sent by ${socket.user.name} in chat ${data.chatId}`);
     });
 
     // Handle typing indicators
@@ -155,8 +145,6 @@ io.on('connection', (socket) => {
 
     // Handle disconnect
     socket.on('disconnect', () => {
-        console.log(`User disconnected: ${socket.user.name} (${socket.userId})`);
-        
         // Broadcast offline status
         socket.broadcast.emit('user_status', {
             userId: socket.userId,
@@ -168,5 +156,4 @@ io.on('connection', (socket) => {
 const PORT = process.env.PORT || 3001; // Use port 3001 to avoid ad blocker issues
 httpServer.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
-    console.log('Socket.io server initialized');
 });

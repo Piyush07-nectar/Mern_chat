@@ -3,7 +3,6 @@ const generateToken = require('../connection/generateToken');
 const bcrypt = require('bcryptjs');
 const registerUser = async (req, res) => {
     try {
-        console.log('=== REGISTRATION START (no email verification) ===');
         const { name, email, password, pic } = req.body;
 
         // Validate required fields
@@ -29,7 +28,6 @@ const registerUser = async (req, res) => {
             pic: pic || ''
         });
 
-        console.log('✅ User created (email verification disabled):', email);
         const token = generateToken(user._id);
         res.status(201).json({
             _id: user._id,
@@ -40,7 +38,6 @@ const registerUser = async (req, res) => {
             message: 'Registration successful'
         });
     } catch (error) {
-        console.error('❌ Registration error:', error);
         res.status(500).json({
             message: 'Internal server error during registration',
             error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
@@ -95,7 +92,6 @@ const loginUser = async (req, res) => {
             token: token
         });
     } catch (error) {
-        console.error('Login error:', error);
         res.status(500).json({ 
             message: 'Internal server error during login' 
         });
