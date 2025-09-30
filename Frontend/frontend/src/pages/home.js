@@ -168,10 +168,11 @@ function Home() {
         <ThemeToggle />
       </div>
 
-      <Container className="py-3 py-md-5">
-        <Row className="justify-content-center">
+      <Container fluid className="px-0">
+        <Row className="justify-content-center g-0">
           <Col xs={12} sm={10} md={8} lg={6} xl={5}>
-            <div className="text-center mb-4 mb-md-5">
+            {/* Mobile Header */}
+            <div className="text-center py-4 py-md-5">
               <h1 
                 className="talkative-title mb-2 mb-md-3"
                 style={{ color: 'var(--text-primary)' }}
@@ -402,7 +403,7 @@ function Home() {
             </Card>
 
             {/* Footer */}
-            <div className="text-center mt-3 mt-md-4">
+            <div className="text-center py-3 px-3">
               <small className="footer-text">
                 By continuing, you agree to our Terms of Service and Privacy Policy
               </small>
