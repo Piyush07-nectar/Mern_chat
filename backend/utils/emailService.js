@@ -25,17 +25,36 @@ const createTransporter = () => {
     });
 };
 
+// Normalize env credentials (Gmail app passwords are often copied with spaces)
+const getEmailCredentials = () => {
+    const rawUser = process.env.EMAIL_USER || '';
+    const rawPass = process.env.EMAIL_PASS || '';
+    // Remove any whitespace inside and trim
+    const user = rawUser.trim();
+    const pass = rawPass.replace(/\s+/g, '').trim();
+    return { user, pass };
+};
+
 const sendVerificationEmail = async (email, verificationCode) => {
     try {
         // Check if email configuration is available
-        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+        const { user, pass } = getEmailCredentials();
+        if (!user || !pass) {
             console.log('⚠️ Email configuration not found. Using console output for testing.');
             console.log('📧 Verification Code for', email, ':', verificationCode);
             console.log('🔗 To enable real emails, set EMAIL_USER and EMAIL_PASS environment variables');
             return { success: true, messageId: 'console-test', testMode: true };
         }
 
+        // Temporarily override process.env for transporter creation
+        const originalUser = process.env.EMAIL_USER;
+        const originalPass = process.env.EMAIL_PASS;
+        process.env.EMAIL_USER = user;
+        process.env.EMAIL_PASS = pass;
         const transporter = createTransporter();
+        // Restore originals to avoid side effects
+        process.env.EMAIL_USER = originalUser;
+        process.env.EMAIL_PASS = originalPass;
         
         const mailOptions = {
             from: process.env.EMAIL_USER,
@@ -100,13 +119,22 @@ const sendVerificationEmail = async (email, verificationCode) => {
 const sendWelcomeEmail = async (email, name) => {
     try {
         // Check if email configuration is available
-        if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+        const { user, pass } = getEmailCredentials();
+        if (!user || !pass) {
             console.log('⚠️ Email configuration not found. Skipping welcome email.');
             console.log('🎉 Welcome', name, 'to ChatApp!');
             return { success: true, messageId: 'console-test', testMode: true };
         }
 
+        // Temporarily override process.env for transporter creation
+        const originalUser = process.env.EMAIL_USER;
+        const originalPass = process.env.EMAIL_PASS;
+        process.env.EMAIL_USER = user;
+        process.env.EMAIL_PASS = pass;
         const transporter = createTransporter();
+        // Restore originals to avoid side effects
+        process.env.EMAIL_USER = originalUser;
+        process.env.EMAIL_PASS = originalPass;
         
         const mailOptions = {
             from: process.env.EMAIL_USER,
