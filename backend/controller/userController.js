@@ -1,15 +1,9 @@
 const User = require('../models/usermodel');
-const EmailVerification = require('../models/emailVerification');
 const generateToken = require('../connection/generateToken');
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const mongoose = require('mongoose');
-const { sendVerificationEmail, sendWelcomeEmail } = require('../utils/emailService');
-const crypto = require('crypto');
 const registerUser = async (req, res) => {
     try {
-        console.log('=== REGISTRATION DEBUG START ===');
-        console.log('Registration attempt:', req.body);
+        console.log('=== REGISTRATION START (no email verification) ===');
         const { name, email, password, pic } = req.body;
 
         // Validate required fields
@@ -26,63 +20,25 @@ const registerUser = async (req, res) => {
             res.status(400).json({ message: 'User already exists' });
             return;
         }
-
-        // Generate a 6-digit verification code
-        const verificationCode = crypto.randomInt(100000, 999999).toString();
-
-        // Upsert verification record to avoid extra reads
-        await EmailVerification.updateOne(
-            { email },
-            {
-                $set: {
-                    verificationCode,
-                    isVerified: false,
-                    attempts: 0,
-                    expiresAt: new Date(Date.now() + 15 * 60 * 1000)
-                },
-                $setOnInsert: { createdAt: new Date() }
-            },
-            { upsert: true }
-        );
-
-        // If debug flag set, await email result and include in response for diagnosis
-        const debugEmail = process.env.EMAIL_DEBUG === '1';
-        if (debugEmail) {
-            console.log('🐞 EMAIL_DEBUG enabled: awaiting sendVerificationEmail result');
-            const emailResult = await sendVerificationEmail(email, verificationCode);
-            console.log('🐞 EMAIL_DEBUG result:', emailResult);
-            return res.status(200).json({
-                message: 'Verification code processed',
-                email,
-                expiresIn: '15 minutes',
-                debug: emailResult,
-                verificationCode
-            });
-        }
-
-        // Fire-and-forget email sending to reduce request latency
-        Promise.resolve().then(() => sendVerificationEmail(email, verificationCode)).catch((e) => {
-            console.error('Email send error (non-blocking):', e.message || e);
+        // Hash password and create user immediately
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const user = await User.create({
+            name,
+            email,
+            password: hashedPassword,
+            pic: pic || ''
         });
 
-        console.log('✅ Verification code generated and email scheduled:', email);
-
-        // In development or when email is not configured, include the code in response for convenience
-        const emailConfigured = Boolean(process.env.EMAIL_USER && process.env.EMAIL_PASS);
-        const isProduction = process.env.NODE_ENV === 'production';
-
-        const responsePayload = {
-            message: 'Verification code sent to your email. Please verify to complete registration.',
-            email,
-            expiresIn: '15 minutes'
-        };
-
-        if (!emailConfigured || !isProduction) {
-            responsePayload.testMode = true;
-            responsePayload.verificationCode = verificationCode;
-        }
-
-        res.status(200).json(responsePayload);
+        console.log('✅ User created (email verification disabled):', email);
+        const token = generateToken(user._id);
+        res.status(201).json({
+            _id: user._id,
+            name: user.name,
+            email: user.email,
+            pic: user.pic || '',
+            token,
+            message: 'Registration successful'
+        });
     } catch (error) {
         console.error('❌ Registration error:', error);
         res.status(500).json({
@@ -93,195 +49,11 @@ const registerUser = async (req, res) => {
 };
 
 const verifyEmail = async (req, res) => {
-    try {
-        const { email, verificationCode, name, password, pic } = req.body;
-
-        // Check if all required fields are provided
-        if (!email || !verificationCode || !name || !password) {
-            res.status(400).json({ 
-                message: 'Please provide all required fields: email, verificationCode, name, password' 
-            });
-            return;
-        }
-
-        // Find verification record
-        const verification = await EmailVerification.findOne({ email });
-        
-        if (!verification) {
-            res.status(400).json({ 
-                message: 'No verification code found for this email. Please register again.' 
-            });
-            return;
-        }
-
-        // Check if already verified
-        if (verification.isVerified) {
-            res.status(400).json({ 
-                message: 'Email already verified. Please login instead.' 
-            });
-            return;
-        }
-
-        // Check if expired
-        if (verification.expiresAt < new Date()) {
-            res.status(400).json({ 
-                message: 'Verification code has expired. Please register again.' 
-            });
-            return;
-        }
-
-        // Check if too many attempts
-        if (verification.attempts >= 3) {
-            res.status(400).json({ 
-                message: 'Too many failed attempts. Please register again.' 
-            });
-            return;
-        }
-
-        // Verify the code
-        if (verification.verificationCode !== verificationCode) {
-            verification.attempts += 1;
-            await verification.save();
-            
-            res.status(400).json({ 
-                message: 'Invalid verification code. Please try again.',
-                attemptsLeft: 3 - verification.attempts
-            });
-            return;
-        }
-
-        // Check if user already exists (double check)
-        const userExists = await User.findOne({ email });
-        if (userExists) {
-            res.status(400).json({ message: 'User already exists' });
-            return;
-        }
-
-        // Hash password
-        const hashedPassword = await bcrypt.hash(password, 10);
-
-        // Create user in database
-        console.log('Creating user in database after email verification...');
-        
-        const user = await User.create({
-            name,
-            email,
-            password: hashedPassword,
-            pic
-        });
-
-        // Mark email as verified
-        verification.isVerified = true;
-        await verification.save();
-
-        // Send welcome email (non-blocking)
-        Promise.resolve().then(() => sendWelcomeEmail(email, name)).catch((e) => {
-            console.error('Welcome email error (non-blocking):', e.message || e);
-        });
-
-        console.log('✅ User created successfully after email verification:', {
-            _id: user._id,
-            name: user.name,
-            email: user.email
-        });
-        
-        res.status(201).json({
-            message: 'Email verified successfully! Welcome to ChatApp!',
-            user: {
-                _id: user._id,
-                name: user.name,
-                email: user.email,
-                pic: user.pic || "",
-                token: generateToken(user._id)
-            }
-        });
-        
-    } catch (error) {
-        console.error('❌ Email verification error:', error);
-        
-        res.status(500).json({ 
-            message: 'Internal server error during email verification',
-            error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
-        });
-    }
+    res.status(410).json({ message: 'Email verification is disabled.' });
 };
 
 const resendVerificationCode = async (req, res) => {
-    try {
-        const { email } = req.body;
-
-        if (!email) {
-            res.status(400).json({ 
-                message: 'Please provide email address' 
-            });
-            return;
-        }
-
-        // Check if user already exists
-        const userExists = await User.findOne({ email });
-        if (userExists) {
-            res.status(400).json({ 
-                message: 'User already exists. Please login instead.' 
-            });
-            return;
-        }
-
-        // Find verification record
-        const verification = await EmailVerification.findOne({ email });
-        
-        if (!verification) {
-            res.status(400).json({ 
-                message: 'No pending verification found for this email. Please register first.' 
-            });
-            return;
-        }
-
-        // Check if already verified
-        if (verification.isVerified) {
-            res.status(400).json({ 
-                message: 'Email already verified. Please login instead.' 
-            });
-            return;
-        }
-
-        // Generate new verification code
-        const verificationCode = crypto.randomInt(100000, 999999).toString();
-
-        // Update verification record
-        verification.verificationCode = verificationCode;
-        verification.attempts = 0;
-        verification.expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
-        await verification.save();
-
-        // Debug mode for resend as well
-        const debugEmail = process.env.EMAIL_DEBUG === '1';
-        if (debugEmail) {
-            console.log('🐞 EMAIL_DEBUG enabled: awaiting sendVerificationEmail result (resend)');
-            const emailResult = await sendVerificationEmail(email, verificationCode);
-            console.log('🐞 EMAIL_DEBUG result (resend):', emailResult);
-        } else {
-            // Send verification email (non-blocking)
-            Promise.resolve().then(() => sendVerificationEmail(email, verificationCode)).catch((emailError) => {
-                console.error('❌ Email service error (non-blocking):', emailError);
-            });
-        }
-
-        console.log('✅ Verification email resent successfully to:', email);
-        
-        res.status(200).json({
-            message: 'New verification code sent to your email. Please check your inbox.',
-            email: email,
-            expiresIn: '15 minutes'
-        });
-        
-    } catch (error) {
-        console.error('❌ Resend verification error:', error);
-        
-        res.status(500).json({ 
-            message: 'Internal server error while resending verification code',
-            error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
-        });
-    }
+    res.status(410).json({ message: 'Email verification is disabled.' });
 };
 
 const loginUser = async (req, res) => {
