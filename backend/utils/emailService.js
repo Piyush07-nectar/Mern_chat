@@ -4,29 +4,42 @@ const nodemailer = require('nodemailer');
 const createTransporter = () => {
     const enableDebug = process.env.EMAIL_DEBUG === '1' || process.env.NODE_ENV !== 'production';
     const commonOpts = enableDebug ? { logger: true, debug: true } : {};
-    // For Gmail
+    // For Gmail service shortcut
     if (process.env.EMAIL_SERVICE === 'gmail') {
-        return nodemailer.createTransport({
+        const cfg = {
             service: 'gmail',
             auth: {
                 user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASS // Use App Password for Gmail
+                pass: process.env.EMAIL_PASS
             },
             ...commonOpts
-        });
+        };
+        if (enableDebug) {
+            console.log('📮 Using Gmail service transporter');
+        }
+        return nodemailer.createTransport(cfg);
     }
-    
-    // For other SMTP providers
-    return nodemailer.createTransport({
-        host: process.env.SMTP_HOST || 'smtp.gmail.com',
-        port: process.env.SMTP_PORT || 587,
-        secure: false, // true for 465, false for other ports
+
+    // Generic SMTP branch (recommended when specifying host/port)
+    const port = Number(process.env.SMTP_PORT || 587);
+    const secureEnv = String(process.env.SMTP_SECURE || '').toLowerCase();
+    const secure = secureEnv === '1' || secureEnv === 'true' || port === 465;
+    const host = process.env.SMTP_HOST || 'smtp.gmail.com';
+
+    const cfg = {
+        host,
+        port,
+        secure,
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS
         },
         ...commonOpts
-    });
+    };
+    if (enableDebug) {
+        console.log('📮 Using SMTP transporter config:', { host, port, secure });
+    }
+    return nodemailer.createTransport(cfg);
 };
 
 // Normalize env credentials (Gmail app passwords are often copied with spaces)
