@@ -19,7 +19,6 @@ import axios from 'axios'
 import './home.css'
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/themeContext';
-import EmailVerification from '../components/EmailVerification';
 import ThemeToggle from '../components/ThemeToggle';
 // API Configuration
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001'
@@ -41,8 +40,6 @@ function Home() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
-  const [showEmailVerification, setShowEmailVerification] = useState(false)
-  const [pendingEmail, setPendingEmail] = useState('')
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -125,17 +122,9 @@ function Home() {
         );
   
         if (response.data) {
-          // Save registration data for verification
-          localStorage.setItem('pendingRegistration', JSON.stringify({
-            name: formData.name,
-            email: formData.email,
-            password: formData.password,
-            pic: formData.pic
-          }));
-          
-          setSuccess('Verification code sent to your email!');
-          setPendingEmail(formData.email);
-          setShowEmailVerification(true);
+          // Registration successful - save user info and redirect
+          localStorage.setItem('userInfo', JSON.stringify(response.data));
+          setSuccess('Registration successful! Redirecting to chat...');
           
           // Clear form data
           setFormData({
@@ -146,6 +135,11 @@ function Home() {
             pic: '',
             picFile: null,
           });
+          
+          // Redirect to chat after successful registration
+          setTimeout(() => {
+            navigate('/chat');
+          }, 1500);
         }
       }
     } catch (error) {
@@ -156,25 +150,6 @@ function Home() {
     }
   };
 
-  const handleVerificationSuccess = (user) => {
-    console.log('✅ Email verification successful:', user);
-    setShowEmailVerification(false);
-    setSuccess('Welcome to ChatApp! Redirecting to chat...');
-    
-    // Redirect to chat after successful verification
-    setTimeout(() => {
-      navigate('/chat');
-    }, 2000);
-  };
-
-  const handleBackToRegister = () => {
-    setShowEmailVerification(false);
-    setPendingEmail('');
-    setSuccess('');
-    setError('');
-    // Clear pending registration data
-    localStorage.removeItem('pendingRegistration');
-  };
 
   return (
     <div 
@@ -439,14 +414,6 @@ function Home() {
         </Row>
       </Container>
 
-      {/* Email Verification Modal */}
-      <EmailVerification
-        show={showEmailVerification}
-        onHide={() => setShowEmailVerification(false)}
-        email={pendingEmail}
-        onVerificationSuccess={handleVerificationSuccess}
-        onBackToRegister={handleBackToRegister}
-      />
     </div>
   )
 }
